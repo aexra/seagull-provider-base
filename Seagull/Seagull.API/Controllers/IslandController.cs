@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Seagull.API.DTO.island.Request;
 using Seagull.API.DTO.island.Response;
 using Seagull.API.Extensions;
 using Seagull.API.Query.invite;
@@ -123,6 +124,43 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         });
     }
 
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> CreateIsland([FromBody] CreateIslandDto dto)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        var island = new Island()
+        {
+            Name = dto.Name,
+            Description = dto.Description,
+            AuthorId = user.Id,
+            OwnerId = user.Id
+        };
+
+        var entry = _context.Island.Add(island);
+
+        var linker = new UserIsland() { IslandId = entry.Entity.Id, UserId = user.Id };
+
+        var linkerEntry = _context.UserIsland.Add(linker);
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new IslandDto()
+        {
+            Id = entry.Entity.Id,
+            Name = entry.Entity.Name,
+            Description = entry.Entity.Description,
+            Status = entry.Entity.Status,
+            AuthorId = entry.Entity.AuthorId,
+            OwnerId = entry.Entity.OwnerId,
+            LogoFilename = entry.Entity.LogoFilename,
+            BannerFilename = entry.Entity.BannerFilename,
+            BannerColor = entry.Entity.BannerColor,
+        });
+    }
+
     [HttpGet("{islandId}/invites")]
     [Authorize]
     public async Task<IActionResult> ListWorkingInvites([FromRoute] int islandId)
@@ -184,6 +222,8 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         };
 
         _context.UserIsland.Add(linker);
+        link.UsagesCount += 1;
+
         await _context.SaveChangesAsync();
 
         return Ok();

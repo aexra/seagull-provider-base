@@ -11,6 +11,7 @@ public class MainContext(DbContextOptions<MainContext> options) : IdentityDbCont
     public DbSet<User> User { get; set; }
     public DbSet<Role> Role { get; set; }
     public DbSet<Island> Island { get; set; }
+    public DbSet<IslandInviteLink> IslandInviteLink { get; set; }
 
     public DbSet<UserIsland> UserIsland { get; set; }
 

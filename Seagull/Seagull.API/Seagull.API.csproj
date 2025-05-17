@@ -29,4 +29,9 @@
     <ProjectReference Include="..\Seagull.Infrastructure\Seagull.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="DTO\island\Request\" />
+    <Folder Include="DTO\island\Response\" />
+  </ItemGroup>
+
 </Project>

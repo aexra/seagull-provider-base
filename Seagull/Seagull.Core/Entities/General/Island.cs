@@ -1,4 +1,5 @@
 ﻿using Seagull.Core.Entities.Identity;
+using Seagull.Core.Entities.Linker;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -27,5 +28,5 @@ public class Island
 
     public User? Author { get; set; }
     public User? Owner { get; set; }
-    public ICollection<User> Users { get; set; } = [];
+    public ICollection<UserIsland> UsersConns { get; set; } = [];
 }

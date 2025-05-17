@@ -89,7 +89,7 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         });
     }
 
-    [HttpGet("{islandId}/invite")]
+    [HttpPost("{islandId}/invite")]
     [Authorize]
     public async Task<IActionResult> GenerateInvite([FromRoute] int islandId, [FromQuery] GenerateInviteQuery query)
     {
@@ -143,26 +143,36 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
             OwnerId = user.Id
         };
 
-        var entry = _context.Island.Add(island);
+        using var transaction = await _context.Database.BeginTransactionAsync();
 
-        var linker = new UserIsland() { IslandId = entry.Entity.Id, UserId = user.Id };
-
-        var linkerEntry = _context.UserIsland.Add(linker);
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new IslandDto()
+        try
         {
-            Id = entry.Entity.Id,
-            Name = entry.Entity.Name,
-            Description = entry.Entity.Description,
-            Status = entry.Entity.Status,
-            AuthorId = entry.Entity.AuthorId,
-            OwnerId = entry.Entity.OwnerId,
-            LogoFilename = entry.Entity.LogoFilename,
-            BannerFilename = entry.Entity.BannerFilename,
-            BannerColor = entry.Entity.BannerColor,
-        });
+            var entry = _context.Island.Add(island);
+            await _context.SaveChangesAsync();
+
+            _context.UserIsland.Add(new UserIsland { IslandId = island.Id, UserId = user.Id });
+            await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+
+            return Ok(new IslandDto()
+            {
+                Id = entry.Entity.Id,
+                Name = entry.Entity.Name,
+                Description = entry.Entity.Description,
+                Status = entry.Entity.Status,
+                AuthorId = entry.Entity.AuthorId,
+                OwnerId = entry.Entity.OwnerId,
+                LogoFilename = entry.Entity.LogoFilename,
+                BannerFilename = entry.Entity.BannerFilename,
+                BannerColor = entry.Entity.BannerColor,
+            });
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     [HttpPut("{islandId}")]

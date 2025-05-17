@@ -49,6 +49,8 @@ services:
       /usr/bin/mc alias set dockerminio http://seagull-minio:9000 minioadmin minioadmin;
       /usr/bin/mc mb dockerminio/user/avatar;
       /usr/bin/mc mb dockerminio/user/banner;
+      /usr/bin/mc mb dockerminio/island/avatar;
+      /usr/bin/mc mb dockerminio/island/banner;
       exit 0;
       "
     networks:

@@ -12,17 +12,22 @@ using Seagull.Core.Entities.Identity;
 using Seagull.Core.Entities.Linker;
 using Seagull.Infrastructure.Data;
 using Seagull.Infrastructure.Hooks;
+using Seagull.Infrastructure.Services;
+using System.Security.Claims;
 
 namespace Seagull.API.Controllers;
 
 [Route("api/island")]
 [ApiController]
-public class IslandController(MainContext context, S3Hook hook, UserManager<User> userManager, InviteGeneratorService gen) : ControllerBase
+public class IslandController(MainContext context, S3Hook hook, UserManager<User> userManager, InviteGeneratorService gen, S3Service s3) : ControllerBase
 {
     private readonly MainContext _context = context;
     private readonly S3Hook _hook = hook;
+    private readonly S3Service _s3 = s3;
     private readonly UserManager<User> _userManager = userManager;
     private readonly InviteGeneratorService _gen = gen;
+
+    private const string _bucketName = "island";
 
     [HttpGet]
     [Authorize]
@@ -228,4 +233,212 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
 
         return Ok();
     }
+
+    #region Avatars
+
+    [HttpPost("{islandId}/avatar")]
+    [Authorize]
+    public async Task<IActionResult> UploadAvatar([FromRoute] int islandId, IFormFile file)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        var island = await _context.Island.FindAsync(islandId);
+        if (island == null) return NotFound($"Island [{islandId}] not found");
+
+        if (island.OwnerId != user.Id) return Forbid();
+
+        if (file == null || file.Length == 0) return BadRequest("No file uploaded");
+        if (!file.ContentType.StartsWith("image/")) return BadRequest("Only image files are allowed");
+        if (!string.IsNullOrEmpty(island.LogoFilename)) await _s3.DeleteObjectAsync(_bucketName, $"avatar/{island.LogoFilename}");
+
+        var result = await _hook.UploadAsync(_bucketName, "avatar", file);
+
+        if (result.Success)
+        {
+            island.LogoFilename = result.FileName;
+            await _context.SaveChangesAsync();
+            return Ok(new IslandDto()
+            {
+                Id = island.Id,
+                Name = island.Name,
+                Description = island.Description,
+                Status = island.Status,
+                AuthorId = island.AuthorId,
+                OwnerId = island.OwnerId,
+                LogoFilename = island.LogoFilename,
+                BannerFilename = island.BannerFilename,
+                BannerColor = island.BannerColor,
+            });
+        }
+        else
+        {
+            return BadRequest(result.ErrorMessage);
+        }
+    }
+
+    [HttpGet("{islandId}/avatar")]
+    public async Task<IActionResult> GetAvatar([FromRoute] int islandId)
+    {
+        var island = await _context.Island.FindAsync(islandId);
+        if (island == null) return NotFound($"Island [{islandId}] not found");
+
+        if (island.LogoFilename == null) return NotFound($"Island has no logo");
+
+        var result = await _hook.LoadAsync(_bucketName, "avatar", island.LogoFilename);
+
+        if (result.Success && result.Data != null)
+        {
+            return File(result.Data, $"image/{Path.GetExtension(island.LogoFilename).ToLower()[1..]}");
+        }
+        else
+        {
+            return BadRequest(result.ErrorMessage);
+        }
+    }
+
+    [HttpDelete("{islandId}/avatar")]
+    [Authorize]
+    public async Task<IActionResult> DeleteAvatar([FromRoute] int islandId)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        var island = await _context.Island.FindAsync(islandId);
+        if (island == null) return NotFound($"Island [{islandId}] not found");
+
+        if (island.OwnerId != user.Id) return Forbid();
+
+        if (island.LogoFilename == null) return NotFound($"Island has no logo");
+
+        var result = await _s3.DeleteObjectAsync(_bucketName, $"avatar/{island.LogoFilename}");
+
+        if (result.Success)
+        {
+            island.LogoFilename = null;
+            await _context.SaveChangesAsync();
+            return Ok(new IslandDto()
+            {
+                Id = island.Id,
+                Name = island.Name,
+                Description = island.Description,
+                Status = island.Status,
+                AuthorId = island.AuthorId,
+                OwnerId = island.OwnerId,
+                LogoFilename = island.LogoFilename,
+                BannerFilename = island.BannerFilename,
+                BannerColor = island.BannerColor,
+            });
+        }
+        else
+        {
+            return BadRequest(result.ErrorMessage);
+        }
+    }
+
+    #endregion
+
+    #region Banners
+
+    [HttpPost("{islandId}/banner")]
+    [Authorize]
+    public async Task<IActionResult> UploadBanner([FromRoute] int islandId, IFormFile file)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        var island = await _context.Island.FindAsync(islandId);
+        if (island == null) return NotFound($"Island [{islandId}] not found");
+
+        if (island.OwnerId != user.Id) return Forbid();
+
+        if (file == null || file.Length == 0) return BadRequest("No file uploaded");
+        if (!file.ContentType.StartsWith("image/")) return BadRequest("Only image files are allowed");
+        if (!string.IsNullOrEmpty(island.BannerFilename)) await _s3.DeleteObjectAsync(_bucketName, $"banner/{island.BannerFilename}");
+
+        var result = await _hook.UploadAsync(_bucketName, "banner", file);
+
+        if (result.Success)
+        {
+            island.BannerFilename = result.FileName;
+            await _context.SaveChangesAsync();
+            return Ok(new IslandDto()
+            {
+                Id = island.Id,
+                Name = island.Name,
+                Description = island.Description,
+                Status = island.Status,
+                AuthorId = island.AuthorId,
+                OwnerId = island.OwnerId,
+                LogoFilename = island.LogoFilename,
+                BannerFilename = island.BannerFilename,
+                BannerColor = island.BannerColor,
+            });
+        }
+        else
+        {
+            return BadRequest(result.ErrorMessage);
+        }
+    }
+
+    [HttpGet("{islandId}/banner")]
+    public async Task<IActionResult> GetBanner([FromRoute] int islandId)
+    {
+        var island = await _context.Island.FindAsync(islandId);
+        if (island == null) return NotFound($"Island [{islandId}] not found");
+
+        if (island.BannerFilename == null) return NotFound($"Island has no banner");
+
+        var result = await _hook.LoadAsync(_bucketName, "avatar", island.BannerFilename);
+
+        if (result.Success && result.Data != null)
+        {
+            return File(result.Data, $"image/{Path.GetExtension(island.BannerFilename).ToLower()[1..]}");
+        }
+        else
+        {
+            return BadRequest(result.ErrorMessage);
+        }
+    }
+
+    [HttpDelete("{islandId}/banner")]
+    [Authorize]
+    public async Task<IActionResult> DeleteBanner([FromRoute] int islandId)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        var island = await _context.Island.FindAsync(islandId);
+        if (island == null) return NotFound($"Island [{islandId}] not found");
+
+        if (island.OwnerId != user.Id) return Forbid();
+
+        if (island.BannerFilename == null) return NotFound($"Island has no banner");
+
+        var result = await _s3.DeleteObjectAsync(_bucketName, $"avatar/{island.BannerFilename}");
+
+        if (result.Success)
+        {
+            island.BannerFilename = null;
+            await _context.SaveChangesAsync();
+            return Ok(new IslandDto()
+            {
+                Id = island.Id,
+                Name = island.Name,
+                Description = island.Description,
+                Status = island.Status,
+                AuthorId = island.AuthorId,
+                OwnerId = island.OwnerId,
+                LogoFilename = island.LogoFilename,
+                BannerFilename = island.BannerFilename,
+                BannerColor = island.BannerColor,
+            });
+        }
+        else
+        {
+            return BadRequest(result.ErrorMessage);
+        }
+    }
+
+    #endregion
 }

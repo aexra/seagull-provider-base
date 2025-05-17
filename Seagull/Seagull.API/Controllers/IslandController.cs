@@ -105,7 +105,7 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         var invite = new IslandInviteLink()
         {
             IslandId = islandId,
-            UserId = user.Id,
+            AuthorId = user.Id,
             EffectiveTo = (query.Days != null || query.Hours != null || query.Minutes != null) ? now : null,
             UsagesMax = query.Usages,
             Content = key,
@@ -142,5 +142,26 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
             UsagesLeft = i.UsagesMax != null ? i.UsagesMax - i.UsagesCount : null,
             Content = i.Content,
         }));
+    }
+
+    [HttpDelete("{islandId}/invite")]
+    [Authorize]
+    public async Task<IActionResult> DeleteInvite([FromRoute] int islandId, [FromQuery] string invite)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        var island = await _context.Island.FindAsync(islandId);
+        if (island == null) return NotFound();
+
+        if (island.OwnerId != user.Id) return Forbid();
+
+        var link = await _context.IslandInviteLink.FindAsync(invite);
+        if (link == null) return NotFound();
+
+        _context.IslandInviteLink.Remove(link);
+        await _context.SaveChangesAsync();
+
+        return Ok();
     }
 }

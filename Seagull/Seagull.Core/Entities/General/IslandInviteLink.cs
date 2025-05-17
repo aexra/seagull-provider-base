@@ -28,4 +28,7 @@ public class IslandInviteLink
 
     public Island? Island { get; set; }
     public User? Author { get; set; }
+
+    [NotMapped]
+    public bool Expired => EffectiveTo != null && DateTime.UtcNow > EffectiveTo || UsagesMax != null && UsagesCount > UsagesMax;
 }

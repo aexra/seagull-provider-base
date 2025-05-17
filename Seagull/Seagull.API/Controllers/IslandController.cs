@@ -8,6 +8,7 @@ using Seagull.API.Query.invite;
 using Seagull.API.Services;
 using Seagull.Core.Entities.General;
 using Seagull.Core.Entities.Identity;
+using Seagull.Core.Entities.Linker;
 using Seagull.Infrastructure.Data;
 using Seagull.Infrastructure.Hooks;
 
@@ -56,7 +57,7 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
             .Include(i => i.UsersConns)
                 .ThenInclude(ui => ui.User)
             .FirstOrDefaultAsync(i => i.Id == islandId);
-        if (island == null) return NotFound();
+        if (island == null) return NotFound($"Island [{islandId}] not found");
 
         return Ok(new IslandExDto()
         {
@@ -91,7 +92,7 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         if (user == null) return Unauthorized();
 
         var island = await _context.Island.FindAsync(islandId);
-        if (island == null) return NotFound();
+        if (island == null) return NotFound($"Island [{islandId}] not found");
 
         if (island.OwnerId != user.Id) return Forbid();
 
@@ -130,7 +131,7 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         if (user == null) return Unauthorized();
 
         var island = await _context.Island.FindAsync(islandId);
-        if (island == null) return NotFound();
+        if (island == null) return NotFound($"Island [{islandId}] not found");
 
         if (island.OwnerId != user.Id) return Forbid();
 
@@ -146,20 +147,43 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
 
     [HttpDelete("{islandId}/invite")]
     [Authorize]
-    public async Task<IActionResult> DeleteInvite([FromRoute] int islandId, [FromQuery] string invite)
+    public async Task<IActionResult> DeleteInvite([FromRoute] int islandId, [FromQuery] string ticket)
     {
         var user = await this.CurrentUserAsync(_userManager);
         if (user == null) return Unauthorized();
 
         var island = await _context.Island.FindAsync(islandId);
-        if (island == null) return NotFound();
+        if (island == null) return NotFound($"Island [{islandId}] not found");
 
         if (island.OwnerId != user.Id) return Forbid();
 
-        var link = await _context.IslandInviteLink.FindAsync(invite);
-        if (link == null) return NotFound();
+        var link = await _context.IslandInviteLink.FindAsync(ticket);
+        if (link == null) return NotFound($"Link [{ticket}] not found");
 
         _context.IslandInviteLink.Remove(link);
+        await _context.SaveChangesAsync();
+
+        return Ok();
+    }
+
+    [HttpPost("/api/invite/{ticket}")]
+    [Authorize]
+    public async Task<IActionResult> UseInvite([FromRoute] string ticket)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        var link = await _context.IslandInviteLink.FindAsync(ticket);
+        if (link == null) return NotFound($"Link [{ticket}] not found");
+        if (link.Expired) return BadRequest($"Link [{ticket}] is expired");
+
+        var linker = new UserIsland()
+        {
+            UserId = user.Id,
+            IslandId = link.IslandId
+        };
+
+        _context.UserIsland.Add(linker);
         await _context.SaveChangesAsync();
 
         return Ok();

@@ -13,7 +13,6 @@ using Seagull.Core.Entities.Linker;
 using Seagull.Infrastructure.Data;
 using Seagull.Infrastructure.Hooks;
 using Seagull.Infrastructure.Services;
-using System.Security.Claims;
 
 namespace Seagull.API.Controllers;
 
@@ -163,6 +162,39 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
             LogoFilename = entry.Entity.LogoFilename,
             BannerFilename = entry.Entity.BannerFilename,
             BannerColor = entry.Entity.BannerColor,
+        });
+    }
+
+    [HttpPut("{islandId}")]
+    [Authorize]
+    public async Task<IActionResult> EditIsland([FromBody] EditIslandDto dto, [FromRoute] int islandId)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        var island = await _context.Island.FindAsync(islandId);
+        if (island == null) return NotFound($"Island [{islandId}] not found");
+
+        if (island.OwnerId != user.Id) return Forbid();
+
+        island.Name = dto.Name;
+        island.Description = dto.Description;
+        island.Status = dto.Status;
+        island.BannerColor = dto.BannerColor;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new IslandDto()
+        {
+            Id = island.Id,
+            Name = island.Name,
+            Description = island.Description,
+            Status = island.Status,
+            AuthorId = island.AuthorId,
+            OwnerId = island.OwnerId,
+            LogoFilename = island.LogoFilename,
+            BannerFilename = island.BannerFilename,
+            BannerColor = island.BannerColor,
         });
     }
 

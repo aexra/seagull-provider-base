@@ -131,6 +131,7 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddTransient<S3Service>();
 builder.Services.AddTransient<S3Hook>();
+builder.Services.AddTransient<InviteGeneratorService>();
 
 #endregion
 

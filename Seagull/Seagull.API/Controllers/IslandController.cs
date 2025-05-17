@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Seagull.API.DTO.island.Response;
 using Seagull.API.Extensions;
+using Seagull.API.Query.invite;
+using Seagull.API.Services;
+using Seagull.Core.Entities.General;
 using Seagull.Core.Entities.Identity;
 using Seagull.Infrastructure.Data;
 using Seagull.Infrastructure.Hooks;
@@ -12,11 +15,12 @@ namespace Seagull.API.Controllers;
 
 [Route("api/island")]
 [ApiController]
-public class IslandController(MainContext context, S3Hook hook, UserManager<User> userManager) : ControllerBase
+public class IslandController(MainContext context, S3Hook hook, UserManager<User> userManager, InviteGeneratorService gen) : ControllerBase
 {
     private readonly MainContext _context = context;
     private readonly S3Hook _hook = hook;
     private readonly UserManager<User> _userManager = userManager;
+    private readonly InviteGeneratorService _gen = gen;
 
     [HttpGet]
     [Authorize]
@@ -78,4 +82,45 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
             )).ToList()
         });
     }
+
+    [HttpGet("invite")]
+    [Authorize]
+    public async Task<IActionResult> GenerateInvite([FromQuery] GenerateInviteQuery query)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        var island = await _context.Island.FindAsync(query.IslandId);
+        if (island == null) return NotFound();
+
+        if (island.OwnerId != user.Id) return Forbid();
+
+        var key = _gen.GenerateUniqueId();
+
+        var now = DateTime.UtcNow;
+        if (query.Days != null) now.AddDays(query.Days.Value);
+        if (query.Hours != null) now.AddHours(query.Hours.Value);
+        if (query.Minutes != null) now.AddMinutes(query.Minutes.Value);
+
+        var invite = new IslandInviteLink()
+        {
+            IslandId = query.IslandId,
+            UserId = user.Id,
+            EffectiveTo = (query.Days != null || query.Hours != null || query.Minutes != null) ? now : null,
+            UsagesMax = query.Usages,
+            Content = key,
+        };
+
+        var entry = _context.IslandInviteLink.Add(invite);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            EffectiveTo = entry.Entity.EffectiveTo,
+            UsagesLeft = entry.Entity.UsagesMax - entry.Entity.UsagesCount,
+            Content = entry.Entity.Content,
+        });
+    }
+
+    
 }

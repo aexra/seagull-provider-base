@@ -14,14 +14,16 @@ public class IslandInviteLink
     [Required, Key, Column(Order = 1)]
     required public string UserId { get; set; }
 
-    [DefaultValue("CURRENT_TIMESTAMP")]
     [Required, Key, Column(Order = 2)]
-    required public DateTime EffectiveFrom { get; set; }
-    required public DateTime EffectiveTo { get; set; }
+    public DateTime EffectiveFrom { get; set; } = DateTime.UtcNow;
+    public DateTime? EffectiveTo { get; set; } = null;
 
     [DefaultValue(null)]
     public int? UsagesMax { get; set; } = null;
 
     [DefaultValue(0)]
     public int UsagesCount { get; set; } = 0;
+
+    [Required]
+    required public string Content { get; set; }
 }

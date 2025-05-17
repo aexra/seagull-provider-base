@@ -103,16 +103,16 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
 
         var key = _gen.GenerateUniqueId();
 
-        var now = DateTime.UtcNow;
-        if (query.Days != null) now.AddDays(query.Days.Value);
-        if (query.Hours != null) now.AddHours(query.Hours.Value);
-        if (query.Minutes != null) now.AddMinutes(query.Minutes.Value);
+        var to = DateTime.UtcNow;
+        if (query.Days != null) to = to.AddDays(query.Days.Value);
+        if (query.Hours != null) to = to.AddHours(query.Hours.Value);
+        if (query.Minutes != null) to = to.AddMinutes(query.Minutes.Value);
 
         var invite = new IslandInviteLink()
         {
             IslandId = islandId,
             AuthorId = user.Id,
-            EffectiveTo = (query.Days != null || query.Hours != null || query.Minutes != null) ? now : null,
+            EffectiveTo = (query.Days != null || query.Hours != null || query.Minutes != null) ? to : null,
             UsagesMax = query.Usages,
             Content = key,
         };

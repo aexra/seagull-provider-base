@@ -4,7 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Minio;
+using Seagull.API.Services;
 using Seagull.Core.Entities.Identity;
+using Seagull.Infrastructure.Data;
+using Seagull.Infrastructure.Hooks;
+using Seagull.Infrastructure.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,7 +32,7 @@ builder.Services.AddCors(options =>
 
 #region DATA
 
-builder.Services.AddDbContext<DatabaseContext>(o => o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddDbContext<MainContext>(o => o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
 #endregion
 
@@ -45,7 +49,7 @@ builder.Services.AddIdentity<User, Role>(o =>
     o.Password.RequireUppercase = false;
     o.Password.RequireNonAlphanumeric = false;
 })
-    .AddEntityFrameworkStores<DatabaseContext>()
+    .AddEntityFrameworkStores<MainContext>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(options =>
@@ -136,7 +140,7 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var ctx = scope.ServiceProvider.GetService<DatabaseContext>();
+    var ctx = scope.ServiceProvider.GetService<MainContext>();
 
     try
     {
@@ -180,9 +184,6 @@ using (var scope = app.Services.CreateScope())
     var adminUserName = config["RootCredentials:UserName"] ?? "aexra";
     var adminEmail = config["RootCredentials:Email"] ?? "defdXs@yandex.ru";
     var adminPassword = config["RootCredentials:Password"] ?? "bimbimbim";
-    var adminFirstName = config["RootCredentials:FirstName"] ?? "Nikita";
-    var adminLastName = config["RootCredentials:LastName"] ?? "Fomin";
-    var adminMiddleName = config["RootCredentials:MiddleName"] ?? "Alekseevich";
     var adminTag = config["RootCredentials:Tag"] ?? "aexra";
     var adminDisplayName = config["RootCredentials:DisplayName"] ?? "aexra";
 
@@ -196,9 +197,6 @@ using (var scope = app.Services.CreateScope())
             UserName = adminUserName,
             Email = adminEmail,
             EmailConfirmed = true,
-            FirstName = adminFirstName,
-            LastName = adminLastName,
-            MiddleName = adminMiddleName,
             Tag = adminTag,
             DisplayName = adminDisplayName
         };

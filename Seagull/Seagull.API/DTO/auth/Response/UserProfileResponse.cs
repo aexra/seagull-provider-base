@@ -6,7 +6,7 @@ public record UserProfileResponse(
     string UserName,
     string DisplayName,
     string Tag,
-    string? AvatarUrl,
-    string? BannerUrl,
+    string? AvatarFilename,
+    string? BannerFilename,
     string? BannerColor,
     IList<string> Roles);

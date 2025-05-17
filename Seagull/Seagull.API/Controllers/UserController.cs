@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Minio.DataModel.Tags;
 using Seagull.API.DTO.auth.Request;
 using Seagull.API.DTO.auth.Response;
 using Seagull.API.Extensions;
@@ -96,8 +95,8 @@ S3Service s3) : ControllerBase
             UserName: user.UserName!,
             DisplayName: user.UserName!,
             Tag: user.Tag,
-            AvatarUrl: user.AvatarUrl,
-            BannerUrl: user.BannerUrl,
+            AvatarFilename: user.AvatarFilename,
+            BannerFilename: user.BannerFilename,
             BannerColor: user.BannerColor,
             Roles: roles
         ));
@@ -118,8 +117,8 @@ S3Service s3) : ControllerBase
             UserName: user.UserName!,
             DisplayName: user.UserName!,
             Tag: user.Tag,
-            AvatarUrl: user.AvatarUrl,
-            BannerUrl: user.BannerUrl,
+            AvatarFilename: user.AvatarFilename,
+            BannerFilename: user.BannerFilename,
             BannerColor: user.BannerColor,
             Roles: roles
         ));
@@ -146,8 +145,8 @@ S3Service s3) : ControllerBase
             UserName: user.UserName!,
             DisplayName: user.UserName!,
             Tag: user.Tag,
-            AvatarUrl: user.AvatarUrl,
-            BannerUrl: user.BannerUrl,
+            AvatarFilename: user.AvatarFilename,
+            BannerFilename: user.BannerFilename,
             BannerColor: user.BannerColor,
             Roles: roles
         ));
@@ -174,8 +173,8 @@ S3Service s3) : ControllerBase
             UserName: user.UserName!,
             DisplayName: user.UserName!,
             Tag: user.Tag,
-            AvatarUrl: user.AvatarUrl,
-            BannerUrl: user.BannerUrl,
+            AvatarFilename: user.AvatarFilename,
+            BannerFilename: user.BannerFilename,
             BannerColor: user.BannerColor,
             Roles: roles
         ));
@@ -200,16 +199,16 @@ S3Service s3) : ControllerBase
             return BadRequest("Only image files are allowed");
         }
 
-        if (!string.IsNullOrEmpty(user.AvatarUrl))
+        if (!string.IsNullOrEmpty(user.AvatarFilename))
         {
-            await _s3.DeleteObjectAsync(_bucketName, $"avatar/{user.AvatarUrl}");
+            await _s3.DeleteObjectAsync(_bucketName, $"avatar/{user.AvatarFilename}");
         }
 
         var result = await _hook.UploadAsync(_bucketName, "avatar", file);
 
         if (result.Success)
         {
-            user.AvatarUrl = result.FileName;
+            user.AvatarFilename = result.FileName;
             await _userManager.UpdateAsync(user);
             return Ok(user);
         }
@@ -226,16 +225,16 @@ S3Service s3) : ControllerBase
         var user = await this.CurrentUserAsync(_userManager);
         if (user == null) return Unauthorized();
 
-        if (user.AvatarUrl == null)
+        if (user.AvatarFilename == null)
         {
             return NotFound();
         }
 
-        var result = await _hook.LoadAsync(_bucketName, "avatar", user.AvatarUrl);
+        var result = await _hook.LoadAsync(_bucketName, "avatar", user.AvatarFilename);
 
         if (result.Success && result.Data != null)
         {
-            return File(result.Data, $"image/{Path.GetExtension(user.AvatarUrl).ToLower()[1..]}");
+            return File(result.Data, $"image/{Path.GetExtension(user.AvatarFilename).ToLower()[1..]}");
         }
         else
         {
@@ -248,16 +247,16 @@ S3Service s3) : ControllerBase
     {
         var user = await _userManager.FindByIdAsync(userId);
 
-        if (user == null || user.AvatarUrl == null)
+        if (user == null || user.AvatarFilename == null)
         {
             return NotFound();
         }
 
-        var result = await _hook.LoadAsync(_bucketName, "avatar", user.AvatarUrl);
+        var result = await _hook.LoadAsync(_bucketName, "avatar", user.AvatarFilename);
 
         if (result.Success && result.Data != null)
         {
-            return File(result.Data, $"image/{Path.GetExtension(user.AvatarUrl).ToLower()[1..]}");
+            return File(result.Data, $"image/{Path.GetExtension(user.AvatarFilename).ToLower()[1..]}");
         }
         else
         {
@@ -272,16 +271,16 @@ S3Service s3) : ControllerBase
         var user = await this.CurrentUserAsync(_userManager);
         if (user == null) return Unauthorized();
 
-        if (string.IsNullOrEmpty(user.AvatarUrl))
+        if (string.IsNullOrEmpty(user.AvatarFilename))
         {
             return NotFound("Avatar not found");
         }
 
-        var result = await _s3.DeleteObjectAsync(_bucketName, $"avatar/{user.AvatarUrl}");
+        var result = await _s3.DeleteObjectAsync(_bucketName, $"avatar/{user.AvatarFilename}");
 
         if (result.Success)
         {
-            user.AvatarUrl = null;
+            user.AvatarFilename = null;
             await _userManager.UpdateAsync(user);
             return Ok();
         }
@@ -296,16 +295,16 @@ S3Service s3) : ControllerBase
     public async Task<IActionResult> DeleteUserAvatar(string userId)
     {
         var user = await _userManager.FindByIdAsync(userId);
-        if (user == null || string.IsNullOrEmpty(user.AvatarUrl))
+        if (user == null || string.IsNullOrEmpty(user.AvatarFilename))
         {
             return NotFound("Avatar not found");
         }
 
-        var result = await _s3.DeleteObjectAsync(_bucketName, $"avatar/{user.AvatarUrl}");
+        var result = await _s3.DeleteObjectAsync(_bucketName, $"avatar/{user.AvatarFilename}");
 
         if (result.Success)
         {
-            user.AvatarUrl = null;
+            user.AvatarFilename = null;
             await _userManager.UpdateAsync(user);
             return Ok();
         }
@@ -345,16 +344,16 @@ S3Service s3) : ControllerBase
             return NotFound("User not found");
         }
 
-        if (!string.IsNullOrEmpty(user.BannerUrl))
+        if (!string.IsNullOrEmpty(user.BannerFilename))
         {
-            await _s3.DeleteObjectAsync(_bucketName, $"banner/{user.BannerUrl}");
+            await _s3.DeleteObjectAsync(_bucketName, $"banner/{user.BannerFilename}");
         }
 
         var result = await _hook.UploadAsync(_bucketName, "banner", file);
 
         if (result.Success)
         {
-            user.BannerUrl = result.FileName;
+            user.BannerFilename = result.FileName;
             await _userManager.UpdateAsync(user);
             return Ok(user);
         }
@@ -371,16 +370,16 @@ S3Service s3) : ControllerBase
         var user = await this.CurrentUserAsync(_userManager);
         if (user == null) return Unauthorized();
 
-        if (user.BannerUrl == null)
+        if (user.BannerFilename == null)
         {
             return NotFound();
         }
 
-        var result = await _hook.LoadAsync(_bucketName, "banner", user.BannerUrl);
+        var result = await _hook.LoadAsync(_bucketName, "banner", user.BannerFilename);
 
         if (result.Success && result.Data != null)
         {
-            return File(result.Data, $"image/{Path.GetExtension(user.BannerUrl).ToLower()[1..]}");
+            return File(result.Data, $"image/{Path.GetExtension(user.BannerFilename).ToLower()[1..]}");
         }
         else
         {
@@ -393,16 +392,16 @@ S3Service s3) : ControllerBase
     {
         var user = await _userManager.FindByIdAsync(userId);
 
-        if (user == null || user.BannerUrl == null)
+        if (user == null || user.BannerFilename == null)
         {
             return NotFound();
         }
 
-        var result = await _hook.LoadAsync(_bucketName, "banner", user.BannerUrl);
+        var result = await _hook.LoadAsync(_bucketName, "banner", user.BannerFilename);
 
         if (result.Success && result.Data != null)
         {
-            return File(result.Data, $"image/{Path.GetExtension(user.BannerUrl).ToLower()[1..]}");
+            return File(result.Data, $"image/{Path.GetExtension(user.BannerFilename).ToLower()[1..]}");
         }
         else
         {
@@ -421,16 +420,16 @@ S3Service s3) : ControllerBase
         }
 
         var user = await _userManager.FindByIdAsync(userId);
-        if (user == null || string.IsNullOrEmpty(user.BannerUrl))
+        if (user == null || string.IsNullOrEmpty(user.BannerFilename))
         {
             return NotFound("Avatar not found");
         }
 
-        var result = await _s3.DeleteObjectAsync(_bucketName, $"banner/{user.BannerUrl}");
+        var result = await _s3.DeleteObjectAsync(_bucketName, $"banner/{user.BannerFilename}");
 
         if (result.Success)
         {
-            user.BannerUrl = null;
+            user.BannerFilename = null;
             await _userManager.UpdateAsync(user);
             return Ok();
         }
@@ -445,16 +444,16 @@ S3Service s3) : ControllerBase
     public async Task<IActionResult> DeleteUserBanner(string userId)
     {
         var user = await _userManager.FindByIdAsync(userId);
-        if (user == null || string.IsNullOrEmpty(user.BannerUrl))
+        if (user == null || string.IsNullOrEmpty(user.BannerFilename))
         {
             return NotFound("Avatar not found");
         }
 
-        var result = await _s3.DeleteObjectAsync(_bucketName, $"banner/{user.BannerUrl}");
+        var result = await _s3.DeleteObjectAsync(_bucketName, $"banner/{user.BannerFilename}");
 
         if (result.Success)
         {
-            user.BannerUrl = null;
+            user.BannerFilename = null;
             await _userManager.UpdateAsync(user);
             return Ok();
         }

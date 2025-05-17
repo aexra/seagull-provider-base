@@ -163,6 +163,50 @@ namespace Seagull.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Seagull.Core.Entities.General.Island", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AuthorId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BannerColor")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BannerFilename")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LogoFilename")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("Island");
+                });
+
             modelBuilder.Entity("Seagull.Core.Entities.Identity.User", b =>
                 {
                     b.Property<string>("Id")
@@ -171,13 +215,13 @@ namespace Seagull.Infrastructure.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
-                    b.Property<string>("AvatarUrl")
+                    b.Property<string>("AvatarFilename")
                         .HasColumnType("text");
 
                     b.Property<string>("BannerColor")
                         .HasColumnType("text");
 
-                    b.Property<string>("BannerUrl")
+                    b.Property<string>("BannerFilename")
                         .HasColumnType("text");
 
                     b.Property<string>("ConcurrencyStamp")
@@ -194,6 +238,9 @@ namespace Seagull.Infrastructure.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
+
+                    b.Property<int?>("IslandId")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
@@ -237,6 +284,8 @@ namespace Seagull.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IslandId");
+
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -245,6 +294,23 @@ namespace Seagull.Infrastructure.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("Seagull.Core.Entities.Linker.UserIsland", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("text")
+                        .HasColumnOrder(0);
+
+                    b.Property<int>("IslandId")
+                        .HasColumnType("integer")
+                        .HasColumnOrder(1);
+
+                    b.HasKey("UserId", "IslandId");
+
+                    b.HasIndex("IslandId");
+
+                    b.ToTable("UserIsland");
                 });
 
             modelBuilder.Entity("Seagull.Core.Entities.Identity.Role", b =>
@@ -303,6 +369,63 @@ namespace Seagull.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Seagull.Core.Entities.General.Island", b =>
+                {
+                    b.HasOne("Seagull.Core.Entities.Identity.User", "Author")
+                        .WithMany("AuthoredIslands")
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Seagull.Core.Entities.Identity.User", "Owner")
+                        .WithMany("OwnedIslands")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("Seagull.Core.Entities.Identity.User", b =>
+                {
+                    b.HasOne("Seagull.Core.Entities.General.Island", null)
+                        .WithMany("Users")
+                        .HasForeignKey("IslandId");
+                });
+
+            modelBuilder.Entity("Seagull.Core.Entities.Linker.UserIsland", b =>
+                {
+                    b.HasOne("Seagull.Core.Entities.General.Island", "Island")
+                        .WithMany()
+                        .HasForeignKey("IslandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Seagull.Core.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Island");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Seagull.Core.Entities.General.Island", b =>
+                {
+                    b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("Seagull.Core.Entities.Identity.User", b =>
+                {
+                    b.Navigation("AuthoredIslands");
+
+                    b.Navigation("OwnedIslands");
                 });
 #pragma warning restore 612, 618
         }

@@ -19,11 +19,11 @@ To apply migrations use [Docker backend reload](#backend-reload)
 ### Startup
 
 ```bash
-docker compose up --build
+docker compose up -d --build
 ```
 
 ### Backend reload
 
 ```bash
-docker compose up --build seagull-backend
+docker compose up -d --build seagull-backend
 ```

@@ -10,4 +10,5 @@ public class User : IdentityUser
     public string? AvatarUrl { get; set; }
     public string? BannerUrl { get; set; }
     public string? BannerColor { get; set; }
+    public string? Status { get; set; }
 }

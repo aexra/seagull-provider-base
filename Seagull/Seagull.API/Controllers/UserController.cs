@@ -2,11 +2,14 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Minio.DataModel.Tags;
+using Seagull.API.DTO.auth.Request;
 using Seagull.API.DTO.auth.Response;
 using Seagull.API.Extensions;
 using Seagull.Core.Entities.Identity;
 using Seagull.Infrastructure.Hooks;
 using Seagull.Infrastructure.Services;
+using System.Data;
 using System.Security.Claims;
 
 namespace Seagull.API.Controllers;
@@ -80,14 +83,14 @@ S3Service s3) : ControllerBase
 
     [HttpGet("me")]
     [Authorize]
-    public async Task<ActionResult<UserProfileResponse>> GetMyProfile()
+    public async Task<IActionResult> GetMyProfile()
     {
         var user = await this.CurrentUserAsync(_userManager);
         if (user == null) return Unauthorized();
 
         var roles = await _userManager.GetRolesAsync(user);
 
-        return new UserProfileResponse(
+        return Ok(new UserProfileResponse(
             Id: user.Id,
             Email: user.Email!,
             UserName: user.UserName!,
@@ -97,11 +100,11 @@ S3Service s3) : ControllerBase
             BannerUrl: user.BannerUrl,
             BannerColor: user.BannerColor,
             Roles: roles
-        );
+        ));
     }
 
     [HttpGet("{userId}")]
-    public async Task<ActionResult<UserProfileResponse>> GetProfile([FromRoute] string userId)
+    public async Task<IActionResult> GetProfile([FromRoute] string userId)
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
@@ -109,7 +112,7 @@ S3Service s3) : ControllerBase
 
         var roles = await _userManager.GetRolesAsync(user);
 
-        return new UserProfileResponse(
+        return Ok(new UserProfileResponse(
             Id: user.Id,
             Email: user.Email!,
             UserName: user.UserName!,
@@ -119,7 +122,63 @@ S3Service s3) : ControllerBase
             BannerUrl: user.BannerUrl,
             BannerColor: user.BannerColor,
             Roles: roles
-        );
+        ));
+    }
+
+    [HttpPut]
+    [Authorize]
+    public async Task<IActionResult> EditProfileSelf([FromBody] EditUserProfileDto dto)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        user.DisplayName = dto.DisplayName;
+        user.BannerColor = dto.BannerColor;
+        user.Status = dto.Status;
+
+        await _userManager.UpdateAsync(user);
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        return Ok(new UserProfileResponse(
+            Id: user.Id,
+            Email: user.Email!,
+            UserName: user.UserName!,
+            DisplayName: user.UserName!,
+            Tag: user.Tag,
+            AvatarUrl: user.AvatarUrl,
+            BannerUrl: user.BannerUrl,
+            BannerColor: user.BannerColor,
+            Roles: roles
+        ));
+    }
+
+    [HttpPut("{userId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> EditProfile([FromRoute] string userId, [FromBody] EditUserProfileDto dto)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return Unauthorized();
+
+        user.DisplayName = dto.DisplayName;
+        user.BannerColor = dto.BannerColor;
+        user.Status = dto.Status;
+
+        await _userManager.UpdateAsync(user);
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        return Ok(new UserProfileResponse(
+            Id: user.Id,
+            Email: user.Email!,
+            UserName: user.UserName!,
+            DisplayName: user.UserName!,
+            Tag: user.Tag,
+            AvatarUrl: user.AvatarUrl,
+            BannerUrl: user.BannerUrl,
+            BannerColor: user.BannerColor,
+            Roles: roles
+        ));
     }
 
     #region Avatars

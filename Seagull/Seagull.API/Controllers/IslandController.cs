@@ -83,14 +83,14 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         });
     }
 
-    [HttpGet("invite")]
+    [HttpGet("{islandId}/invite")]
     [Authorize]
-    public async Task<IActionResult> GenerateInvite([FromQuery] GenerateInviteQuery query)
+    public async Task<IActionResult> GenerateInvite([FromRoute] int islandId, [FromQuery] GenerateInviteQuery query)
     {
         var user = await this.CurrentUserAsync(_userManager);
         if (user == null) return Unauthorized();
 
-        var island = await _context.Island.FindAsync(query.IslandId);
+        var island = await _context.Island.FindAsync(islandId);
         if (island == null) return NotFound();
 
         if (island.OwnerId != user.Id) return Forbid();
@@ -104,7 +104,7 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
 
         var invite = new IslandInviteLink()
         {
-            IslandId = query.IslandId,
+            IslandId = islandId,
             UserId = user.Id,
             EffectiveTo = (query.Days != null || query.Hours != null || query.Minutes != null) ? now : null,
             UsagesMax = query.Usages,
@@ -114,13 +114,33 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         var entry = _context.IslandInviteLink.Add(invite);
         await _context.SaveChangesAsync();
 
-        return Ok(new
+        return Ok(new IslandInviteDto()
         {
             EffectiveTo = entry.Entity.EffectiveTo,
-            UsagesLeft = entry.Entity.UsagesMax - entry.Entity.UsagesCount,
+            UsagesLeft = entry.Entity.UsagesMax,
             Content = entry.Entity.Content,
         });
     }
 
-    
+    [HttpGet("{islandId}/invites")]
+    [Authorize]
+    public async Task<IActionResult> ListWorkingInvites([FromRoute] int islandId)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        var island = await _context.Island.FindAsync(islandId);
+        if (island == null) return NotFound();
+
+        if (island.OwnerId != user.Id) return Forbid();
+
+        var invites = await _context.IslandInviteLink.Where(x => !(x.EffectiveTo != null && DateTime.UtcNow > x.EffectiveTo || x.UsagesMax != null && x.UsagesCount > x.UsagesMax)).ToListAsync();
+
+        return Ok(invites.Select(i => new IslandInviteDto()
+        {
+            EffectiveTo = i.EffectiveTo,
+            UsagesLeft = i.UsagesMax != null ? i.UsagesMax - i.UsagesCount : null,
+            Content = i.Content,
+        }));
+    }
 }

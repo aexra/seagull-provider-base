@@ -397,6 +397,12 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
 
     #region Avatars
 
+    /// <summary>
+    /// Устанавливает multipart/form-data как аватарку для острова
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <param name="file"></param>
+    /// <returns></returns>
     [HttpPost("{islandId}/avatar")]
     [Authorize]
     public async Task<IActionResult> UploadAvatar([FromRoute] int islandId, IFormFile file)
@@ -438,6 +444,11 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         }
     }
 
+    /// <summary>
+    /// Возвращает multipart/form-data аватарки острова
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <returns></returns>
     [HttpGet("{islandId}/avatar")]
     public async Task<IActionResult> GetAvatar([FromRoute] int islandId)
     {
@@ -458,6 +469,11 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         }
     }
 
+    /// <summary>
+    /// Удаляет аватарку с острова
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <returns></returns>
     [HttpDelete("{islandId}/avatar")]
     [Authorize]
     public async Task<IActionResult> DeleteAvatar([FromRoute] int islandId)
@@ -501,6 +517,12 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
 
     #region Banners
 
+    /// <summary>
+    /// Устанавливает multipart/form-data как баннер для острова
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <param name="file"></param>
+    /// <returns></returns>
     [HttpPost("{islandId}/banner")]
     [Authorize]
     public async Task<IActionResult> UploadBanner([FromRoute] int islandId, IFormFile file)
@@ -542,6 +564,11 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         }
     }
 
+    /// <summary>
+    /// Возвращает multipart/form-data баннера острова
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <returns></returns>
     [HttpGet("{islandId}/banner")]
     public async Task<IActionResult> GetBanner([FromRoute] int islandId)
     {
@@ -562,6 +589,11 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         }
     }
 
+    /// <summary>
+    /// Удаляет баннер с острова
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <returns></returns>
     [HttpDelete("{islandId}/banner")]
     [Authorize]
     public async Task<IActionResult> DeleteBanner([FromRoute] int islandId)

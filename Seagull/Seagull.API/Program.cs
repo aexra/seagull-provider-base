@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Minio;
+using Scalar.AspNetCore;
 using Seagull.API.Services;
 using Seagull.Core.Entities.Identity;
 using Seagull.Infrastructure.Data;
@@ -96,29 +97,63 @@ builder.Services.AddSingleton<IMinioClient>(new MinioClient()
 
 #endregion
 
-#region SWAGGER
+#region SWAGGER CONFIG
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+//builder.Services.AddEndpointsApiExplorer();
+//builder.Services.AddSwaggerGen(c =>
+//{
+//    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Aether API", Version = "v1" });
+//    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+//    {
+//        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+//        Name = "Authorization",
+//        In = ParameterLocation.Header,
+//        Type = SecuritySchemeType.ApiKey,
+//        Scheme = "Bearer"
+//    });
+//    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+//    {
+//        {
+//            new OpenApiSecurityScheme
+//            {
+//                Reference = new OpenApiReference
+//                {
+//                    Type=ReferenceType.SecurityScheme,
+//                    Id="Bearer"
+//                }
+//            },
+//            Array.Empty<string>()
+//        }
+//    });
+
+//    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+//    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+//});
+
+#endregion
+
+#region SCALAR CONFIG
+
+builder.Services.AddSwaggerGen(opt =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Aether API", Version = "v1" });
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+        BearerFormat = "JWT",
+        Description = "JWT Authorization header using the Bearer scheme.",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
+        Type = SecuritySchemeType.Http,
         Scheme = "Bearer"
     });
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    opt.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
             {
                 Reference = new OpenApiReference
                 {
-                    Type=ReferenceType.SecurityScheme,
-                    Id="Bearer"
+                    Id = "Bearer",
+                    Type = ReferenceType.SecurityScheme
                 }
             },
             Array.Empty<string>()
@@ -126,7 +161,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+    opt.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 });
 
 #endregion
@@ -243,8 +278,28 @@ app.UseCors("ProductionPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.UseSwagger();
-app.UseSwaggerUI();
+
+#region SWAGGER
+
+//app.UseSwagger();
+//app.UseSwaggerUI();
+
+#endregion
+
+#region SCALAR
+
+app.UseSwagger(opt =>
+{
+    opt.RouteTemplate = "openapi/{documentName}.json";
+});
+app.MapScalarApiReference(opt =>
+{
+    opt.Title = "Scalar Example";
+    opt.Theme = ScalarTheme.Mars;
+    opt.DefaultHttpClient = new(ScalarTarget.Http, ScalarClient.Http11);
+});
+
+#endregion
 
 app.MapGet("/test", () => "This is base Seagull API!");
 

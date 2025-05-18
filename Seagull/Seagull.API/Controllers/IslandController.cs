@@ -208,6 +208,24 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         });
     }
 
+    [HttpDelete("{islandId}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteIsland([FromRoute] int islandId)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        var island = await _context.Island.FindAsync(islandId);
+        if (island == null) return NotFound($"Island [{islandId}] not found");
+
+        if (island.OwnerId != user.Id) return Forbid();
+
+        _context.Island.Remove(island);
+        await _context.SaveChangesAsync();
+
+        return Ok();
+    }
+
     [HttpGet("{islandId}/invites")]
     [Authorize]
     public async Task<IActionResult> ListWorkingInvites([FromRoute] int islandId)

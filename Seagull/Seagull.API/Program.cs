@@ -9,6 +9,7 @@ using Seagull.Core.Entities.Identity;
 using Seagull.Infrastructure.Data;
 using Seagull.Infrastructure.Hooks;
 using Seagull.Infrastructure.Services;
+using System.Reflection;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -123,6 +124,9 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 });
 
 #endregion

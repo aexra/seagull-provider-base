@@ -276,6 +276,25 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         return Ok();
     }
 
+    [HttpPost("{islandId}/leave")]
+    [Authorize]
+    public async Task<IActionResult> LeaveIsland([FromRoute] string islandId)
+    {
+        var user = await this.CurrentUserAsync(_userManager);
+        if (user == null) return Unauthorized();
+
+        var island = await _context.Island.FindAsync(islandId);
+        if (island == null) return NotFound($"Island [{islandId}] not found");
+
+        var ui = await _context.UserIsland.FindAsync(user.Id, island.Id);
+        if (ui == null) return BadRequest($"You are not in island [{island.Id}]");
+
+        _context.UserIsland.Remove(ui);
+        await _context.SaveChangesAsync();
+
+        return Ok();
+    }
+
     #region Avatars
 
     [HttpPost("{islandId}/avatar")]

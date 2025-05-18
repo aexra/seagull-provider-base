@@ -28,6 +28,10 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
 
     private const string _bucketName = "island";
 
+    /// <summary>
+    /// Возвращает список островов в которых есть текущий пользователь
+    /// </summary>
+    /// <returns></returns>
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> ListMyIslands()
@@ -55,6 +59,11 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         return Ok(my);
     }
 
+    /// <summary>
+    /// Возвращает подробную информацию об определенном острове
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <returns></returns>
     [HttpGet("{islandId}")]
     public async Task<IActionResult> GetIsland([FromRoute] int islandId)
     {
@@ -89,6 +98,12 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         });
     }
 
+    /// <summary>
+    /// Генерирует ссылку для приглашения в остров
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <param name="query"></param>
+    /// <returns></returns>
     [HttpPost("{islandId}/invite")]
     [Authorize]
     public async Task<IActionResult> GenerateInvite([FromRoute] int islandId, [FromQuery] GenerateInviteQuery query)
@@ -128,6 +143,11 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         });
     }
 
+    /// <summary>
+    /// Создает новый остров от имени текущего пользователя
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <returns></returns>
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> CreateIsland([FromBody] CreateIslandDto dto)
@@ -175,6 +195,12 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         }
     }
 
+    /// <summary>
+    /// Владелец острова изменяет его детали
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <param name="islandId"></param>
+    /// <returns></returns>
     [HttpPut("{islandId}")]
     [Authorize]
     public async Task<IActionResult> EditIsland([FromBody] EditIslandDto dto, [FromRoute] int islandId)
@@ -208,6 +234,11 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         });
     }
 
+    /// <summary>
+    /// Владелец острова удаляет свой остров
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <returns></returns>
     [HttpDelete("{islandId}")]
     [Authorize]
     public async Task<IActionResult> DeleteIsland([FromRoute] int islandId)
@@ -226,6 +257,11 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         return Ok();
     }
 
+    /// <summary>
+    /// Возвращает список действующих приглашений в остров (только для владельца)
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <returns></returns>
     [HttpGet("{islandId}/invites")]
     [Authorize]
     public async Task<IActionResult> ListWorkingInvites([FromRoute] int islandId)
@@ -248,6 +284,12 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         }));
     }
 
+    /// <summary>
+    /// Удаляет приглашение (только для владельца острова)
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <param name="ticket"></param>
+    /// <returns></returns>
     [HttpDelete("{islandId}/invite")]
     [Authorize]
     public async Task<IActionResult> DeleteInvite([FromRoute] int islandId, [FromQuery] string ticket)
@@ -269,6 +311,11 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         return Ok();
     }
 
+    /// <summary>
+    /// Применяет приглашение для текущего пользователя
+    /// </summary>
+    /// <param name="ticket"></param>
+    /// <returns></returns>
     [HttpPost("/api/invite/{ticket}")]
     [Authorize]
     public async Task<IActionResult> UseInvite([FromRoute] string ticket)
@@ -297,6 +344,11 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         return Ok();
     }
 
+    /// <summary>
+    /// Текущий пользователь выходит из острова
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <returns></returns>
     [HttpPost("{islandId}/leave")]
     [Authorize]
     public async Task<IActionResult> LeaveIsland([FromRoute] string islandId)
@@ -316,6 +368,12 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         return Ok();
     }
 
+    /// <summary>
+    /// Владелец острова выгоняет другого пользователя
+    /// </summary>
+    /// <param name="islandId"></param>
+    /// <param name="userId"></param>
+    /// <returns></returns>
     [HttpDelete("{islandId}/user/{userId}")]
     [Authorize]
     public async Task<IActionResult> RemoveUser([FromRoute] string islandId, [FromRoute] string userId)

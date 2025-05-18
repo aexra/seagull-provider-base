@@ -1,5 +1,11 @@
 # seagull-backend
 
+## DOCS
+
+### API
+API docs: http://localhost:8080/scalar
+> or any other domain you use
+
 ## Migrations
 
 From `seagull-backend/`:

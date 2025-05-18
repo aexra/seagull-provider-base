@@ -295,7 +295,7 @@ app.UseSwagger(opt =>
 app.MapScalarApiReference(opt =>
 {
     opt.Title = "Scalar Example";
-    opt.Theme = ScalarTheme.Mars;
+    opt.Theme = ScalarTheme.Default;
     opt.DefaultHttpClient = new(ScalarTarget.Http, ScalarClient.Http11);
 });
 

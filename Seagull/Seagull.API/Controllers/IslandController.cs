@@ -280,6 +280,9 @@ public class IslandController(MainContext context, S3Hook hook, UserManager<User
         if (link == null) return NotFound($"Link [{ticket}] not found");
         if (link.Expired) return BadRequest($"Link [{ticket}] is expired");
 
+        var existingLinker = await _context.UserIsland.FindAsync(user.Id, link.IslandId);
+        if (existingLinker != null) return BadRequest($"You are in island already");
+
         var linker = new UserIsland()
         {
             UserId = user.Id,
